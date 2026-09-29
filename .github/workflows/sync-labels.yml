@@ -1,0 +1,35 @@
+name: Sync labels
+
+# Crea/actualiza los labels definidos en .github/labels.json (idempotente).
+# No borra labels que no estén en el archivo.
+on:
+  push:
+    branches: [main]
+    paths: [.github/labels.json]
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/labels.json
+          sparse-checkout-cone-mode: false
+
+      - name: Create or update labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          jq -c '.[]' .github/labels.json | while read -r label; do
+            name=$(jq -r '.name' <<<"$label")
+            gh label create "$name" \
+              --color "$(jq -r '.color' <<<"$label")" \
+              --description "$(jq -r '.description' <<<"$label")" \
+              --force
+            echo "✔ $name"
+          done

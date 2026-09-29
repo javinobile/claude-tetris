@@ -1,0 +1,2 @@
+# Obliga a usar las plantillas: así toda issue llega con estructura analizable.
+blank_issues_enabled: false

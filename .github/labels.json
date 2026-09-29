@@ -1,0 +1,27 @@
+[
+  { "name": "type: bug",            "color": "d73a4a", "description": "Algo no funciona como debería" },
+  { "name": "type: feature",        "color": "a2eeef", "description": "Nueva funcionalidad o mejora" },
+  { "name": "type: docs",           "color": "0075ca", "description": "Documentación (README, CLAUDE.md, comentarios)" },
+  { "name": "type: question",       "color": "d876e3", "description": "Pregunta o consulta, no requiere cambios de código" },
+
+  { "name": "priority: critical",   "color": "b60205", "description": "El juego no carga o es injugable" },
+  { "name": "priority: high",       "color": "d93f0b", "description": "Afecta una mecánica central sin workaround" },
+  { "name": "priority: medium",     "color": "fbca04", "description": "Afecta la experiencia pero hay workaround" },
+  { "name": "priority: low",        "color": "0e8a16", "description": "Cosmético o de bajo impacto" },
+
+  { "name": "area: gameplay",       "color": "c5def5", "description": "Movimiento, rotación, colisiones, piezas, bloqueo" },
+  { "name": "area: scoring",        "color": "c5def5", "description": "Puntuación, líneas, niveles, velocidad de caída" },
+  { "name": "area: rendering",      "color": "c5def5", "description": "Dibujo en canvas, colores, pieza fantasma, vista previa" },
+  { "name": "area: controls",       "color": "c5def5", "description": "Teclado, pausa, reinicio" },
+  { "name": "area: ui",             "color": "c5def5", "description": "HTML/CSS, panel lateral, overlay, layout" },
+  { "name": "area: docs",           "color": "c5def5", "description": "README, CLAUDE.md, plantillas, workflows" },
+
+  { "name": "status: needs-triage", "color": "ededed", "description": "Pendiente de triage automático" },
+  { "name": "status: needs-info",   "color": "f9d0c4", "description": "Falta información del autor para continuar" },
+  { "name": "status: triaged",      "color": "bfdadc", "description": "Clasificado y diagnosticado, listo para revisión humana" },
+  { "name": "status: in-progress",  "color": "1d76db", "description": "Alguien está trabajando en esto" },
+  { "name": "status: blocked",      "color": "5319e7", "description": "Bloqueado por otra issue o decisión" },
+
+  { "name": "duplicate",            "color": "cfd3d7", "description": "Ya existe una issue equivalente" },
+  { "name": "good first issue",     "color": "7057ff", "description": "Buena para quien empieza en el proyecto" }
+]

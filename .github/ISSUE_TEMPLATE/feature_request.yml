@@ -1,0 +1,72 @@
+name: ✨ Propuesta de mejora
+description: Sugerir una nueva funcionalidad o un cambio en el juego.
+title: "[Feature]: "
+labels: ["type: feature", "status: needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe el **problema** antes que la solución: ayuda a evaluar alternativas.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema o motivación
+      description: ¿Qué necesidad no cubre el juego hoy?
+      placeholder: Al jugar partidas largas no tengo forma de guardar mi mejor puntuación.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Solución propuesta
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación
+      description: Condiciones verificables para considerar la propuesta terminada.
+      placeholder: |
+        - [ ] La mejor puntuación se muestra en el panel lateral
+        - [ ] Persiste al recargar la página (localStorage)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área afectada
+      options:
+        - Gameplay (movimiento, rotación, colisiones, piezas)
+        - Puntuación / niveles / velocidad
+        - Renderizado (canvas, colores, pieza fantasma, vista previa)
+        - Controles (teclado, pausa, reinicio)
+        - Interfaz (HTML/CSS, panel, overlay)
+        - Documentación
+        - No estoy seguro
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Contexto adicional
+      description: Referencias, mockups, ejemplos de otros Tetris…
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Verificaciones
+      options:
+        - label: Busqué en las issues existentes y no encontré una propuesta equivalente.
+          required: true
+        - label: La propuesta respeta el alcance del proyecto (vanilla JS, sin dependencias ni build).
+          required: true

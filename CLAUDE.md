@@ -30,3 +30,8 @@ Key conventions in `game.js`:
 - The next-piece preview assumes a 4×4 grid of 30px cells (`drawNext`, matching the 120×120 `#next-canvas`).
 
 If `COLS`, `ROWS`, or `BLOCK` change, the `#board` canvas `width`/`height` in `index.html` must be updated to `COLS × BLOCK` by `ROWS × BLOCK`.
+
+## GitHub automation
+
+- Issues must use the forms in `.github/ISSUE_TEMPLATE/` (blank issues disabled). Label taxonomy lives in `.github/labels.json` and is applied to the repo by `sync-labels.yml` (on push to `main` or manual dispatch) — add labels there, never ad hoc.
+- `claude-issue-triage.yml` runs on issue open/reopen and on the author's reply to a `status: needs-info` issue. Its tool allowlist only permits writing labels/comments on the triggering issue; issue text is never interpolated into the prompt (prompt-injection guard). Keep both properties when editing it.

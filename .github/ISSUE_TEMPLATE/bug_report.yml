@@ -1,0 +1,139 @@
+name: 🐛 Reporte de bug
+description: Algo del juego no funciona como debería.
+title: "[Bug]: "
+labels: ["type: bug", "status: needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar. Completa todos los campos obligatorios: el triage automático
+        los usa para clasificar, priorizar y hacer un primer diagnóstico.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Resumen
+      description: Una o dos frases describiendo el problema.
+      placeholder: La pieza I atraviesa la pared derecha al rotar.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      description: Lista numerada, lo más precisa posible.
+      placeholder: |
+        1. Abrir index.html
+        2. Mover la pieza I hasta la pared derecha
+        3. Pulsar ↑ para rotar
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento actual
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área afectada
+      description: Tu mejor estimación; el triage puede corregirla.
+      options:
+        - Gameplay (movimiento, rotación, colisiones, piezas)
+        - Puntuación / niveles / velocidad
+        - Renderizado (canvas, colores, pieza fantasma, vista previa)
+        - Controles (teclado, pausa, reinicio)
+        - Interfaz (HTML/CSS, panel, overlay)
+        - No estoy seguro
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidad percibida
+      options:
+        - Bloqueante — el juego no carga o no se puede jugar
+        - Alta — una mecánica central falla y no hay workaround
+        - Media — molesta pero se puede seguir jugando
+        - Baja — cosmético
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frecuencia
+      options:
+        - Siempre
+        - A veces
+        - Solo una vez
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Navegador y versión
+      placeholder: Chrome 128, Firefox 130, Safari 18…
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Sistema operativo
+      placeholder: macOS 15, Windows 11, Ubuntu 24.04…
+    validations:
+      required: true
+
+  - type: dropdown
+    id: run-mode
+    attributes:
+      label: ¿Cómo ejecutas el juego?
+      options:
+        - Abriendo index.html directamente
+        - Servidor local (python, npx serve, etc.)
+        - Otro
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit o versión
+      description: Salida de `git rev-parse --short HEAD`, si la tienes.
+      placeholder: 872cd59
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errores de consola
+      description: Copia los errores de la consola del navegador (F12 → Console), si hay.
+      render: text
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Capturas / contexto adicional
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Verificaciones
+      options:
+        - label: Busqué en las issues existentes y no encontré un duplicado.
+          required: true
+        - label: Puedo reproducirlo con la última versión de `main`.
+          required: false

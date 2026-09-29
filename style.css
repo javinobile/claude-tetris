@@ -19,6 +19,29 @@ body {
   position: relative;
 }
 
+/* ---- Título ---- */
+.game-title {
+  font-family: 'Russo One', Impact, 'Arial Black', sans-serif;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: 6px;
+  color: #d32f2f;
+  text-shadow: 0 0 18px rgba(211, 47, 47, 0.5), 2px 2px 0 #f5c518;
+  margin-bottom: 20px;
+}
+
+.game-title span {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  letter-spacing: 12px;
+  color: #f5c518;
+  text-shadow: none;
+}
+
 .game-container {
   display: flex;
   gap: 20px;

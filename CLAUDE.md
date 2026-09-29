@@ -27,6 +27,7 @@ Key conventions in `game.js`:
 - **Game loop** (`loop`) runs on `requestAnimationFrame`, accumulating `dropAccum` until `dropInterval`. Pausing and game over stop the loop with `cancelAnimationFrame(animId)`; unpausing restarts it by calling `loop()` directly.
 - **Lock sequence**: `lockPiece()` → `merge()` → `clearLines()` (updates lines/score/level/`dropInterval`) → `spawn()` (promotes `next`, generates a new one, triggers `endGame()` if the spawned piece already collides, redraws the preview).
 - **Scoring/speed**: `LINE_SCORES[cleared] * level`; hard drop +2/cell, soft drop +1/row; level = `floor(lines / 10) + 1`; `dropInterval = max(100, 1000 − (level − 1) × 90)`.
+- **Combo system** (in `clearLines(tSpin)`): `gained = base × combo × level`, where `base` is `LINE_SCORES` or `TSPIN_SCORES` (×1.5 if back-to-back), plus `PERFECT_CLEAR_SCORES × level` on an empty board. T-spin uses the 3-corner rule (`isTSpin()`, evaluated before `merge()`) and requires `lastMoveRotate`, which any successful move/drop resets. Visual feedback (`messages`, `flash`) is updated by `dt` in `loop` (so it freezes on pause); sounds are synthesized with Web Audio (`playSound`), `M` mutes.
 - The next-piece preview assumes a 4×4 grid of 30px cells (`drawNext`, matching the 120×120 `#next-canvas`).
 
 If `COLS`, `ROWS`, or `BLOCK` change, the `#board` canvas `width`/`height` in `index.html` must be updated to `COLS × BLOCK` by `ROWS × BLOCK`.

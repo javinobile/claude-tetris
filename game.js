@@ -640,10 +640,9 @@ function closePauseMenu() {
 }
 
 function gameInputBlocked(e) {
-  if (e.repeat && awaitingFreshKey) return true;
-  if (performance.now() < inputGuardUntil) return true;
-  awaitingFreshKey = false;
-  return false;
+  if (!e.repeat) awaitingFreshKey = false;
+  else if (awaitingFreshKey) return true;
+  return performance.now() < inputGuardUntil;
 }
 
 function handlePauseMenuKey(e) {

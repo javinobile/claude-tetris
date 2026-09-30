@@ -43,6 +43,7 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
 - **Niveles** que aumentan cada 10 líneas y aceleran la caída.
 - **Pausa** y **Game Over** con opción de reinicio.
+- **Temas visuales (skins)**: selector **TEMA** en el panel lateral con cuatro estilos — **Retro** (bloques cuadrados y colores planos), **Neón** (fondo negro con efecto _glow_), **Pastel** (colores suaves y bordes redondeados) y **Pixel art** (textura pixelada en cada bloque). El cambio es instantáneo, incluso en pausa, y la elección se guarda en `localStorage`.
 
 ---
 
@@ -174,9 +175,20 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `COLS`         | Columnas del tablero                     | `10`                  |
 | `ROWS`         | Filas del tablero                        | `20`                  |
 | `BLOCK`        | Tamaño en píxeles de cada celda          | `30`                  |
-| `COLORS`       | Paleta de colores por tipo de pieza      | 7 colores             |
+| `SKINS`        | Temas visuales (paleta, fondo, rejilla y dibujo de bloque) | `retro`, `neon`, `pastel`, `pixel` |
 | `LINE_SCORES`  | Puntos por 1, 2, 3 o 4 líneas eliminadas | `[0,100,300,500,800]` |
 | `dropInterval` | Velocidad inicial de caída en ms         | `1000`                |
+
+### Temas visuales (skins)
+
+Cada entrada de `SKINS` define:
+
+- `name`: nombre que se muestra.
+- `colors`: array de 8 posiciones (`null` + un color por pieza, en el mismo orden que `PIECES`: I, O, T, S, Z, J, L).
+- `bg`, `border` y `grid`: fondo y borde de los canvas (se aplican con las variables CSS `--board-bg` / `--board-border`) y color de la rejilla.
+- `drawBlock(ctx, x, y, color, size, alpha)`: dibuja un bloque en coordenadas de píxel; `alpha < 1` indica la pieza fantasma.
+
+Para añadir un tema nuevo, agrega una entrada a `SKINS` y una `<option>` con la misma clave en el `<select id="skin-select">` de `index.html`. La preferencia se guarda en `localStorage` bajo la clave `tetris.skin`; si el valor guardado no existe, se usa `retro`.
 
 > Si cambias `COLS`, `ROWS` o `BLOCK`, recuerda ajustar también `width` y `height` del `<canvas id="board">` en `index.html` para que coincida (`COLS × BLOCK` × `ROWS × BLOCK`).
 

@@ -17,7 +17,7 @@ There are no automated tests; verify changes by playing the game in a browser.
 
 ## Architecture
 
-Three files: `index.html` (DOM: `#board` canvas, side panel with `#score`/`#lines`/`#level`, `#next-canvas`, `#skin-select`, and a single `#overlay` reused for both PAUSA and GAME OVER), `style.css`, and `game.js`, which holds all logic as top-level functions sharing module-level mutable state (`board`, `current`, `next`, `score`, `lines`, `level`, `paused`, `gameOver`, `dropInterval`, `animId`, …). `init()` resets all of it and is also the restart-button handler.
+Three files: `index.html` (DOM: `#board` canvas, side panel with `#score`/`#lines`/`#level`, `#next-canvas`, `#skin-select`, `#overlay` for GAME OVER, and a separate `#pause-menu` overlay), `style.css`, and `game.js`, which holds all logic as top-level functions sharing module-level mutable state (`board`, `current`, `next`, `score`, `lines`, `level`, `paused`, `gameOver`, `dropInterval`, `animId`, …). `init()` resets all of it and is also the restart-button handler.
 
 Key conventions in `game.js`:
 
@@ -26,8 +26,9 @@ Key conventions in `game.js`:
 - **Piece object** is `{ type, shape, x, y }`; `shape` is a copy of the `PIECES` matrix and is replaced (not mutated) on rotation via `rotateCW` (transpose + reverse). `tryRotate` applies simple horizontal wall kicks `[0, -1, 1, -2, 2]` — no SRS.
 - **`collide(shape, ox, oy)`** is the single source of truth for movement validity; cells with `y < 0` are allowed (above the board).
 - **Game loop** (`loop`) runs on `requestAnimationFrame`, accumulating `dropAccum` until `dropInterval`. Pausing and game over stop the loop with `cancelAnimationFrame(animId)`; unpausing restarts it by calling `loop()` directly.
+- **Pause menu** (`// ==== Pause menu ====` section): `P`/`Escape` call `togglePause()`, which opens/closes `#pause-menu` (Reanudar, Reiniciar, Ver controles, Nivel inicial). While `paused`, keydown goes only to `handlePauseMenuKey` (arrow/Tab focus navigation, ←/→ change the level). `closePauseMenu()` (also called by `init()`) arms a resume guard: game keys are ignored for `RESUME_GUARD_MS` and `e.repeat` events are ignored until a fresh keydown. The starting level preference lives in `startLevel` (persisted as `localStorage['tetris.startLevel']`, 1–10, all access in try/catch); `init()` copies it into `gameStartLevel` so changing it mid-game only affects the next game.
 - **Lock sequence**: `lockPiece()` → `merge()` → `clearLines()` (updates lines/score/level/`dropInterval`) → `spawn()` (promotes `next`, generates a new one, triggers `endGame()` if the spawned piece already collides, redraws the preview).
-- **Scoring/speed**: `LINE_SCORES[cleared] * level`; hard drop +2/cell, soft drop +1/row; level = `floor(lines / 10) + 1`; `dropInterval = max(100, 1000 − (level − 1) × 90)`.
+- **Scoring/speed**: `LINE_SCORES[cleared] * level`; hard drop +2/cell, soft drop +1/row; level = `max(gameStartLevel, floor(lines / 10) + 1)`; `dropInterval = levelDropInterval(level)` = `max(100, 1000 − (level − 1) × 90)`, both at `init()` and in `clearLines()`.
 - **Combo system** (in `clearLines(tSpin)`): `gained = base × combo × level`, where `base` is `LINE_SCORES` or `TSPIN_SCORES` (×1.5 if back-to-back), plus `PERFECT_CLEAR_SCORES × level` on an empty board. T-spin uses the 3-corner rule (`isTSpin()`, evaluated before `merge()`) and requires `lastMoveRotate`, which any successful move/drop resets. Visual feedback (`messages`, `flash`) is updated by `dt` in `loop` (so it freezes on pause); sounds are synthesized with Web Audio (`playSound`), `M` mutes.
 - The next-piece preview assumes a 4×4 grid of 30px cells (`drawNext`, matching the 120×120 `#next-canvas`).
 

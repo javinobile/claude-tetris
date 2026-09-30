@@ -137,6 +137,7 @@ function clearLines(tSpin) {
   }
 
   combo++;
+  if (combo > maxCombo) maxCombo = combo;
   let base = tSpin ? TSPIN_SCORES[cleared] : LINE_SCORES[cleared];
   const difficult = tSpin || cleared === 4;
   const b2b = difficult && backToBack;
@@ -437,6 +438,7 @@ function applySkin(name, persist) {
   }
   // Re-renderizar aunque el loop esté parado (pausa / game over)
   if (board && current) draw();
+  else if (board) { ctx.clearRect(0, 0, canvas.width, canvas.height); drawGrid(); }
   if (next) drawNext();
 }
 
@@ -518,6 +520,7 @@ function endGame() {
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
   overlay.classList.remove('hidden');
+  showHighscoresPanel();
 }
 
 function togglePause() {
@@ -559,6 +562,7 @@ function init() {
   level = gameStartLevel;
   paused = false;
   gameOver = false;
+  resetHighscoreState();
   dropInterval = levelDropInterval(level);
   dropAccum = 0;
   combo = 0;
@@ -614,6 +618,7 @@ function loadStartLevel() {
 function setStartLevel(n) {
   startLevel = clampStartLevel(n);
   startLevelSelect.value = String(startLevel);
+  startLevelHome.value = String(startLevel);
   try {
     localStorage.setItem(START_LEVEL_KEY, String(startLevel));
   } catch { /* almacenamiento no disponible: solo se aplica en esta sesión */ }
@@ -684,7 +689,241 @@ pauseRestartBtn.addEventListener('click', init);
 controlsToggle.addEventListener('click', () => setControlsOpen(pauseControls.hidden));
 startLevelSelect.addEventListener('change', () => setStartLevel(parseInt(startLevelSelect.value, 10)));
 
+// ==== Highscores ====
+// Top 5 local en localStorage + mejores marcas (combo y líneas) + pantalla de inicio.
+
+const HS_KEY = 'tetris.highscores';
+const BESTS_KEY = 'tetris.bests';
+const HS_MAX = 5;
+const NAME_MAX = 12;
+const DEFAULT_NAME = 'Anónimo';
+
+const startScreen = document.getElementById('start-screen');
+const startBtn = document.getElementById('start-btn');
+const hsPanel = document.getElementById('highscores-panel');
+const nameForm = document.getElementById('name-form');
+const nameInput = document.getElementById('name-input');
+const startLevelHome = document.getElementById('start-level-home');
+
+// maxCombo: el mejor `combo` (sistema de combos de clearLines) alcanzado en la partida.
+let maxCombo = 0, started = false, pendingEntry = null;
+
+function toCount(v) {
+  return Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
+}
+
+function sanitizeName(raw) {
+  const name = String(raw ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, NAME_MAX);
+  return name || DEFAULT_NAME;
+}
+
+// Si localStorage no está disponible (bloqueado, modo privado…), los datos se
+// mantienen en memoria durante la sesión para que la tabla siga siendo coherente.
+const storageFallback = {};
+
+function readStored(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw === null ? null : JSON.parse(raw);
+  } catch {
+    return storageFallback[key] ?? null;
+  }
+}
+
+function writeStored(key, value) {
+  storageFallback[key] = value;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch { /* almacenamiento no disponible: queda solo en memoria */ }
+}
+
+function removeStored(key) {
+  delete storageFallback[key];
+  try {
+    localStorage.removeItem(key);
+  } catch { /* almacenamiento no disponible */ }
+}
+
+function loadHighscores() {
+  const data = readStored(HS_KEY);
+  if (!Array.isArray(data)) return [];
+  return data
+    .filter(e => e && typeof e === 'object' && Number.isFinite(e.score) && e.score >= 0)
+    .map(e => ({
+      name: sanitizeName(e.name),
+      score: Math.floor(e.score),
+      lines: toCount(e.lines),
+      maxCombo: toCount(e.maxCombo),
+      date: typeof e.date === 'string' ? e.date : '',
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, HS_MAX);
+}
+
+function saveHighscores(list) {
+  writeStored(HS_KEY, list);
+}
+
+function loadBests() {
+  const data = readStored(BESTS_KEY);
+  if (!data || typeof data !== 'object') return { bestCombo: 0, maxLines: 0 };
+  return { bestCombo: toCount(data.bestCombo), maxLines: toCount(data.maxLines) };
+}
+
+function saveBests(bests) {
+  writeStored(BESTS_KEY, bests);
+}
+
+function qualifies(value, list) {
+  return value > 0 && (list.length < HS_MAX || value > list[list.length - 1].score);
+}
+
+function buildTable(list, highlightIdx) {
+  if (!list.length) {
+    const p = document.createElement('p');
+    p.className = 'hs-empty';
+    p.textContent = 'Aún no hay récords';
+    return p;
+  }
+  const table = document.createElement('table');
+  table.className = 'hs-table';
+  const head = table.createTHead().insertRow();
+  for (const h of ['#', 'NOMBRE', 'PUNTOS', 'LÍNEAS', 'COMBO']) {
+    const th = document.createElement('th');
+    th.textContent = h;
+    head.appendChild(th);
+  }
+  const body = table.createTBody();
+  list.forEach((entry, i) => {
+    const row = body.insertRow();
+    if (i === highlightIdx) row.className = 'hs-highlight';
+    const cells = [
+      [String(i + 1), 'hs-num'],
+      [entry.name, 'hs-name'],
+      [entry.score.toLocaleString(), 'hs-num'],
+      [String(entry.lines), 'hs-num'],
+      [String(entry.maxCombo), 'hs-num'],
+    ];
+    for (const [text, cls] of cells) {
+      const td = row.insertCell();
+      td.className = cls;
+      td.textContent = text; // nunca innerHTML con el nombre del jugador
+    }
+  });
+  return table;
+}
+
+function fillBests(el, bests) {
+  el.replaceChildren(
+    'Mejor combo: ',
+    Object.assign(document.createElement('strong'), { textContent: String(bests.bestCombo) }),
+    ' · Máx. líneas: ',
+    Object.assign(document.createElement('strong'), { textContent: String(bests.maxLines) }),
+  );
+}
+
+// Pinta todas las tablas (inicio y game over). highlightIdx solo aplica al panel de game over.
+function renderHighscores(highlightIdx = -1) {
+  const list = loadHighscores();
+  const bests = loadBests();
+  document.querySelectorAll('[data-hs-table]').forEach(el => {
+    const idx = hsPanel.contains(el) ? highlightIdx : -1;
+    el.replaceChildren(buildTable(list, idx));
+  });
+  document.querySelectorAll('[data-hs-bests]').forEach(el => fillBests(el, bests));
+}
+
+function resetHighscoreState() {
+  maxCombo = 0;
+  started = true;
+  pendingEntry = null;
+  hsPanel.classList.add('hidden');
+  nameForm.classList.add('hidden');
+  startScreen.classList.add('hidden');
+}
+
+// Llamado desde endGame(): guarda mejores marcas y pide nombre si entra en el top 5.
+function showHighscoresPanel() {
+  const bests = loadBests();
+  saveBests({
+    bestCombo: Math.max(bests.bestCombo, maxCombo),
+    maxLines: Math.max(bests.maxLines, lines),
+  });
+
+  if (qualifies(score, loadHighscores())) {
+    pendingEntry = { score, lines, maxCombo, date: new Date().toISOString() };
+    nameInput.value = '';
+    nameForm.classList.remove('hidden');
+  } else {
+    pendingEntry = null;
+    nameForm.classList.add('hidden');
+  }
+  renderHighscores();
+  hsPanel.classList.remove('hidden');
+  if (pendingEntry) nameInput.focus();
+}
+
+function submitName(e) {
+  e.preventDefault();
+  if (!pendingEntry) return;
+  const entry = { name: sanitizeName(nameInput.value), ...pendingEntry };
+  pendingEntry = null;
+  const list = loadHighscores();
+  let idx = list.findIndex(x => x.score < entry.score);
+  if (idx === -1) idx = list.length;
+  list.splice(idx, 0, entry);
+  saveHighscores(list.slice(0, HS_MAX));
+  nameForm.classList.add('hidden');
+  renderHighscores(idx < HS_MAX ? idx : -1);
+  restartBtn.focus();
+}
+
+function resetRecords() {
+  if (!confirm('¿Borrar todos los récords? Esta acción no se puede deshacer.')) return;
+  removeStored(HS_KEY);
+  removeStored(BESTS_KEY);
+  renderHighscores();
+}
+
+function showStartScreen() {
+  started = false;
+  board = createBoard();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
+  renderHighscores();
+  startLevelHome.value = String(startLevel);
+  startScreen.classList.remove('hidden');
+}
+
+function isTextEntry(el) {
+  return el instanceof HTMLElement &&
+    (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+}
+
+// Devuelve true si la tecla ya se gestionó aquí y el handler del juego debe ignorarla.
+function handleHighscoreKeys(e) {
+  if (isTextEntry(e.target)) return true; // escribiendo el nombre: no hay controles del juego
+  if (!started) {
+    if ((e.code === 'Enter' || e.code === 'NumpadEnter') && e.target.tagName !== 'BUTTON') {
+      e.preventDefault();
+      init();
+    }
+    return true;
+  }
+  return false;
+}
+
+nameForm.addEventListener('submit', submitName);
+startBtn.addEventListener('click', init);
+startLevelHome.addEventListener('change', () => setStartLevel(parseInt(startLevelHome.value, 10)));
+document.querySelectorAll('[data-hs-reset]').forEach(btn => btn.addEventListener('click', resetRecords));
+
 document.addEventListener('keydown', e => {
+  if (handleHighscoreKeys(e)) return; // escribiendo el nombre o en la pantalla de inicio
   if (e.code === 'KeyP' || e.code === 'Escape') {
     if (!e.repeat) togglePause();
     return;
@@ -729,4 +968,4 @@ document.addEventListener('keydown', e => {
 restartBtn.addEventListener('click', init);
 
 initSkins();
-init();
+showStartScreen();

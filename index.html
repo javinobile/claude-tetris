@@ -71,6 +71,19 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+        <div id="highscores-panel" class="highscores-panel hidden">
+          <form id="name-form" class="name-form hidden" autocomplete="off">
+            <p class="new-record">¡Nuevo récord! Entras en el top 5</p>
+            <label for="name-input" class="label">TU NOMBRE</label>
+            <div class="name-row">
+              <input id="name-input" type="text" maxlength="12" placeholder="Anónimo" spellcheck="false" />
+              <button type="submit" id="name-save-btn" class="hs-btn">Guardar</button>
+            </div>
+          </form>
+          <div class="hs-table-wrap" data-hs-table></div>
+          <p class="hs-bests" data-hs-bests></p>
+          <button type="button" class="hs-reset-btn" data-hs-reset>Borrar récords</button>
+        </div>
         <button id="restart-btn">Reiniciar</button>
       </div>
     </div>
@@ -106,6 +119,33 @@
           </select>
         </label>
         <p class="pause-hint">El nivel inicial se aplica al reiniciar.<br /><kbd>↑</kbd><kbd>↓</kbd> navegar · <kbd>←</kbd><kbd>→</kbd> nivel · <kbd>Enter</kbd> elegir</p>
+      </div>
+    </div>
+
+    <!-- Pantalla de inicio con la tabla de récords -->
+    <div id="start-screen" class="overlay start-screen">
+      <div class="overlay-box">
+        <p class="start-title">RÉCORDS</p>
+        <div class="hs-table-wrap" data-hs-table></div>
+        <p class="hs-bests" data-hs-bests></p>
+        <label class="start-level" for="start-level-home">
+          <span>Nivel inicial</span>
+          <select id="start-level-home">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+          </select>
+        </label>
+        <button type="button" id="start-btn">Jugar</button>
+        <p class="start-hint">Pulsa <kbd>Enter</kbd> para empezar</p>
+        <button type="button" class="hs-reset-btn" data-hs-reset>Borrar récords</button>
       </div>
     </div>
   </div>

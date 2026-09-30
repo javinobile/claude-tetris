@@ -150,8 +150,8 @@ function clearLines(tSpin) {
   score += gained;
 
   lines += cleared;
-  level = Math.floor(lines / 10) + 1;
-  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+  level = Math.max(gameStartLevel, Math.floor(lines / 10) + 1);
+  dropInterval = levelDropInterval(level);
 
   if (tSpin) addMessage(`T-SPIN ${['', 'SINGLE', 'DOUBLE', 'TRIPLE'][cleared]}`, '#ba68c8');
   else if (cleared === 4) addMessage('TETRIS', '#4dd0e1');
@@ -441,7 +441,7 @@ function applySkin(name, persist) {
 }
 
 const skinSelect = document.getElementById('skin-select');
-const GAME_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyX', 'KeyP', 'KeyM'];
+const GAME_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyX', 'KeyP', 'Escape', 'KeyM'];
 
 function initSkins() {
   const name = loadSkinName();
@@ -524,14 +524,12 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
-    overlay.classList.add('hidden');
+    closePauseMenu();
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    openPauseMenu();
   }
 }
 
@@ -557,10 +555,11 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  gameStartLevel = startLevel;
+  level = gameStartLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = levelDropInterval(level);
   dropAccum = 0;
   combo = 0;
   backToBack = false;
@@ -572,11 +571,127 @@ function init() {
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  closePauseMenu();
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
+// ==== Pause menu ====
+const START_LEVEL_KEY = 'tetris.startLevel';
+const MIN_START_LEVEL = 1;
+const MAX_START_LEVEL = 10;
+const RESUME_GUARD_MS = 150;
+
+const pauseMenu = document.getElementById('pause-menu');
+const resumeBtn = document.getElementById('resume-btn');
+const pauseRestartBtn = document.getElementById('pause-restart-btn');
+const controlsToggle = document.getElementById('controls-toggle');
+const pauseControls = document.getElementById('pause-controls');
+const startLevelSelect = document.getElementById('start-level');
+
+let startLevel = loadStartLevel(); // preferencia para la próxima partida
+let gameStartLevel = startLevel;   // nivel con el que empezó la partida en curso
+let inputGuardUntil = 0;           // hasta cuándo se ignoran las teclas de juego tras reanudar
+let awaitingFreshKey = false;      // ignora auto-repeat hasta una pulsación nueva
+
+function levelDropInterval(lvl) {
+  return Math.max(100, 1000 - (lvl - 1) * 90);
+}
+
+function clampStartLevel(n) {
+  return Math.min(MAX_START_LEVEL, Math.max(MIN_START_LEVEL, n));
+}
+
+function loadStartLevel() {
+  try {
+    const v = parseInt(localStorage.getItem(START_LEVEL_KEY), 10);
+    return Number.isFinite(v) ? clampStartLevel(v) : MIN_START_LEVEL;
+  } catch {
+    return MIN_START_LEVEL;
+  }
+}
+
+function setStartLevel(n) {
+  startLevel = clampStartLevel(n);
+  startLevelSelect.value = String(startLevel);
+  try {
+    localStorage.setItem(START_LEVEL_KEY, String(startLevel));
+  } catch { /* almacenamiento no disponible: solo se aplica en esta sesión */ }
+}
+
+function setControlsOpen(open) {
+  pauseControls.hidden = !open;
+  controlsToggle.setAttribute('aria-expanded', String(open));
+  controlsToggle.textContent = open ? 'Ocultar controles' : 'Ver controles';
+}
+
+function openPauseMenu() {
+  startLevelSelect.value = String(startLevel);
+  setControlsOpen(false);
+  pauseMenu.classList.remove('hidden');
+  resumeBtn.focus();
+}
+
+function closePauseMenu() {
+  if (pauseMenu.contains(document.activeElement)) document.activeElement.blur();
+  pauseMenu.classList.add('hidden');
+  inputGuardUntil = performance.now() + RESUME_GUARD_MS;
+  awaitingFreshKey = true;
+}
+
+function gameInputBlocked(e) {
+  if (e.repeat && awaitingFreshKey) return true;
+  if (performance.now() < inputGuardUntil) return true;
+  awaitingFreshKey = false;
+  return false;
+}
+
+function handlePauseMenuKey(e) {
+  const items = [resumeBtn, pauseRestartBtn, controlsToggle, startLevelSelect];
+  const idx = items.indexOf(document.activeElement);
+  switch (e.code) {
+    case 'ArrowUp':
+    case 'ArrowDown': {
+      e.preventDefault();
+      const dir = e.code === 'ArrowDown' ? 1 : -1;
+      const nextIdx = idx === -1 ? 0 : (idx + dir + items.length) % items.length;
+      items[nextIdx].focus();
+      break;
+    }
+    case 'ArrowLeft':
+    case 'ArrowRight':
+      e.preventDefault();
+      if (document.activeElement === startLevelSelect)
+        setStartLevel(startLevel + (e.code === 'ArrowRight' ? 1 : -1));
+      break;
+    case 'Tab': {
+      // mantener el foco dentro del menú
+      e.preventDefault();
+      const dir = e.shiftKey ? -1 : 1;
+      const nextIdx = idx === -1 ? 0 : (idx + dir + items.length) % items.length;
+      items[nextIdx].focus();
+      break;
+    }
+    case 'Space':
+    case 'Enter':
+      // los botones se activan de forma nativa; sin foco, no hacer nada (ni scroll)
+      if (idx === -1) e.preventDefault();
+      break;
+  }
+}
+
+resumeBtn.addEventListener('click', () => { if (paused) togglePause(); });
+pauseRestartBtn.addEventListener('click', init);
+controlsToggle.addEventListener('click', () => setControlsOpen(pauseControls.hidden));
+startLevelSelect.addEventListener('change', () => setStartLevel(parseInt(startLevelSelect.value, 10)));
+
 document.addEventListener('keydown', e => {
+  if (e.code === 'KeyP' || e.code === 'Escape') {
+    if (!e.repeat) togglePause();
+    return;
+  }
+  if (e.code === 'KeyM') { muted = !muted; return; }
+  if (paused) { handlePauseMenuKey(e); return; }
   // Si el selector de skin conserva el foco, las teclas de juego le quitan el foco
   // (sin cambiar su valor) y siguen controlando la partida.
   if (e.target === skinSelect && GAME_KEYS.includes(e.code)) {
@@ -585,9 +700,11 @@ document.addEventListener('keydown', e => {
   } else if (e.target instanceof Element && e.target.closest('select, input, textarea')) {
     return;
   }
-  if (e.code === 'KeyP') { togglePause(); return; }
-  if (e.code === 'KeyM') { muted = !muted; return; }
-  if (paused || gameOver) return;
+  if (gameOver) return;
+  if (gameInputBlocked(e)) {
+    if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+    return;
+  }
   switch (e.code) {
     case 'ArrowLeft':
       if (!collide(current.shape, current.x - 1, current.y)) { current.x--; lastMoveRotate = false; }
